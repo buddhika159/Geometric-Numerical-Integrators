@@ -1,0 +1,415 @@
+clear all
+close all
+clc
+
+%--------------------------------------------------------------------------
+% Initialize
+%--------------------------------------------------------------------------
+
+omega = 100;
+time_range = 10000
+dt = 0.001
+tol = 1e-13
+Max_NW_Iter = 100;
+dim = 5;
+
+
+itr = time_range/dt;
+
+
+q_int = [3;0.01;0.01;0.01;0.01]; 
+p_int = [1;   0;   0;   0;   0]; 
+
+
+%--------------------------------------------------------------------------
+% Hamiltonian and gradiants of the system
+%--------------------------------------------------------------------------
+syms q [1 dim] real
+syms p [1 dim] real
+
+Q = [q1 q2 q3 q4 q5];
+P = [p1 p2 p3 p4 p5];
+
+H(q1,q2,q3,q4,q5,p1,p2,p3,p4,p5) = (-1).*p1.^2.*p2.^2+(-1).*p2.^2.*p3.^2+(-1).*p3.^2.*p4.^2+(-1).*p4.^2.*p5.^2+p2.^2.*q1.^2+(1/4).*(p1.^2+q1.^2).^2+(-4).*p1.*p2.*q1.*q2+p1.^2.*q2.^2+p3.^2.*q2.^2+(-1).*q1.^2.*q2.^2+(1/4).*(p2.^2+q2.^2).^2+(-4).*p2.*p3.*q2.*q3+p2.^2.*q3.^2+p4.^2.*q3.^2+(-1).*q2.^2.*q3.^2+(1/4).*(p3.^2+q3.^2).^2+(-4).*p3.*p4.*q3.*q4+p3.^2.*q4.^2+p5.^2.*q4.^2+(-1).*q3.^2.*q4.^2+(1/4).*(p4.^2+q4.^2).^2+(-4).*p4.*p5.*q4.*q5+p4.^2.*q5.^2+(-1).*q4.^2.*q5.^2+(1/4).*(p5.^2+q5.^2).^2;
+
+gradq = matlabFunction(gradient(H, Q));
+gradp = matlabFunction(gradient(H, P));
+gradqq = matlabFunction(jacobian(gradient(H,Q),Q));
+gradqp = matlabFunction(jacobian(gradient(H,Q),P));
+gradpp = matlabFunction(jacobian(gradient(H,P),P));
+
+gradq=@(q,p) gradq(q(1),q(2),q(3),q(4),q(5),p(1),p(2),p(3),p(4),p(5));
+gradp=@(q,p) gradp(q(1),q(2),q(3),q(4),q(5),p(1),p(2),p(3),p(4),p(5));
+gradqq=@(q,p) gradqq(q(1),q(2),q(3),q(4),q(5),p(1),p(2),p(3),p(4),p(5));
+gradqp=@(q,p) gradqp(q(1),q(2),q(3),q(4),q(5),p(1),p(2),p(3),p(4),p(5));
+gradpp=@(q,p) gradpp(q(1),q(2),q(3),q(4),q(5),p(1),p(2),p(3),p(4),p(5));
+
+%--------------------------------------------------------------------------
+% Invariants of the system
+%--------------------------------------------------------------------------
+H  = matlabFunction(H);
+I=@(q1,q2,q3,q4,q5,p1,p2,p3,p4,p5) p1.^2+p2.^2+p3.^2+p4.^2+p5.^2+q1.^2+q2.^2+q3.^2+q4.^2+q5.^2;
+
+
+
+%--------------------------------------------------------------------------
+% Geometric integrators
+%--------------------------------------------------------------------------
+
+Tao_args    = {gradq, gradp, q_int, p_int, dt, itr, omega};
+Strang_args = {gradq, gradp, q_int, p_int, dt, itr};
+semi_args   = {gradq, gradp, q_int, p_int, dt, itr, tol, Max_NW_Iter};
+Gauss_args  = {gradq, gradp, gradqq, gradqp, gradpp, q_int, p_int, dt, itr, tol, Max_NW_Iter};
+
+semi = semiexplicit;
+
+% [ q_1,  p_1,                   Defect_1,  time_1] = Tao_method.Tao2   (Tao_args{:});
+[ q_2,  p_2,                              time_2] = Strang_proj.base2 (Strang_args{:});  
+[ q_3,  p_3,  NW_3,  Error_3,  Defect_3,  time_3] = semi.base2        (semi_args{:});  
+[ q_4,  p_4,  NW_4,  Error_4,             time_4] = IMid2             (Gauss_args{:});
+
+% [ q_5,  p_5,                   Defect_5,  time_5] = Tao_method.TJ4    (Tao_args{:});
+[ q_6,  p_6,                              time_6] = Strang_proj.TJ4   (Strang_args{:}); 
+[ q_7,  p_7,  NW_7,  Error_7,  Defect_7,  time_7] = semi.TJ4          (semi_args{:});   
+[ q_8,  p_8,  NW_8,  Error_8,  Defect_8,  time_8] = semi.Su4          (semi_args{:});   
+[ q_9,  p_9,  NW_9,  Error_9,             time_9] = IRK4              (Gauss_args{:});  
+% [ q_9,  p_9,                              time_9] = RK4               (Strang_args{:}); 
+
+% [q_10, p_10,                  Defect_10, time_10] = Tao_method.TJ6    (Tao_args{:});
+[q_11, p_11,                             time_11] = Strang_proj.TJ6   (Strang_args{:});  
+[q_12, p_12, NW_12, Error_12, Defect_12, time_12] = semi.TJ6          (semi_args{:});   
+[q_13, p_13, NW_13, Error_13, Defect_13, time_13] = semi.Su6          (semi_args{:});  
+[q_14, p_14, NW_14, Error_14, Defect_14, time_14] = semi.Yo6          (semi_args{:});  
+
+
+% 
+% method = [{'Tao 2'};{'Strang_proj 2'};{'semiexplicit 2'};{'Midpoint'};
+%           {'Tao 4'};{'Strang_proj 4'};{'semiexplicit 4'};{'semiexplicit-S 4'};{'IRK4'};
+%           {'Tao 6'};{'Strang_proj 6'};{'semiexplicit 6'};{'semiexplicit-S 6'};{'semiexplicit-Y 6'}];
+% 
+% NW_itrs     = [     nan;     nan;    NW_3;    NW_4;     nan;     nan;    NW_7;    NW_8;    NW_9;      nan;     nan;    NW_12;    NW_13;    NW_14]/itr;
+% Max_Errors  = [     nan;     nan; Error_3; Error_4;     nan;     nan; Error_7; Error_8; Error_9;      nan;     nan; Error_12; Error_13; Error_14];
+% Max_Defects = [Defect_1;     nan;Defect_3;     nan;Defect_5;     nan;Defect_7;Defect_8;     nan;Defect_10;     nan;Defect_12;Defect_13;Defect_14];
+% time_cal    = [  time_1;  time_2;  time_3;  time_4;  time_5;  time_6;  time_7;  time_8;  time_9;  time_10; time_11;  time_12;  time_13;  time_14];
+% 
+% 
+% table(method, time_cal)
+% 
+% 
+
+
+%--------------------------------------------------------------------------
+% Computation of errors of the system invariants
+%--------------------------------------------------------------------------
+
+z_int = num2cell([q_int;p_int]);
+
+H_int = H(z_int{:});
+I_int = I(z_int{:});
+
+% selecting every other element to avoid a memory problem
+% z_1  = [arrayfun(@(x) {q_1(x,1:2:end)},1:dim), arrayfun(@(x) {p_1(x,1:2:end)},1:dim)];
+z_2  = [arrayfun(@(x) {q_2(x,1:2:end)},1:dim), arrayfun(@(x) {p_2(x,1:2:end)},1:dim)];
+z_3  = [arrayfun(@(x) {q_3(x,1:2:end)},1:dim), arrayfun(@(x) {p_3(x,1:2:end)},1:dim)];
+z_4  = [arrayfun(@(x) {q_4(x,1:2:end)},1:dim), arrayfun(@(x) {p_4(x,1:2:end)},1:dim)];
+% z_5  = [arrayfun(@(x) {q_5(x,1:2:end)},1:dim), arrayfun(@(x) {p_5(x,1:2:end)},1:dim)];
+z_6  = [arrayfun(@(x) {q_6(x,1:2:end)},1:dim), arrayfun(@(x) {p_6(x,1:2:end)},1:dim)];
+z_7  = [arrayfun(@(x) {q_7(x,1:2:end)},1:dim), arrayfun(@(x) {p_7(x,1:2:end)},1:dim)];
+z_8  = [arrayfun(@(x) {q_8(x,1:2:end)},1:dim), arrayfun(@(x) {p_8(x,1:2:end)},1:dim)];
+z_9  = [arrayfun(@(x) {q_9(x,1:2:end)},1:dim), arrayfun(@(x) {p_9(x,1:2:end)},1:dim)];
+% z_10 = [arrayfun(@(x) {q_10(x,1:2:end)},1:dim), arrayfun(@(x) {p_10(x,1:2:end)},1:dim)];
+z_11 = [arrayfun(@(x) {q_11(x,1:2:end)},1:dim), arrayfun(@(x) {p_11(x,1:2:end)},1:dim)];
+z_12 = [arrayfun(@(x) {q_12(x,1:2:end)},1:dim), arrayfun(@(x) {p_12(x,1:2:end)},1:dim)];
+z_13 = [arrayfun(@(x) {q_13(x,1:2:end)},1:dim), arrayfun(@(x) {p_13(x,1:2:end)},1:dim)];
+z_14 = [arrayfun(@(x) {q_14(x,1:2:end)},1:dim), arrayfun(@(x) {p_14(x,1:2:end)},1:dim)];
+
+
+
+% H_Tao2_error         = (H(z_1{:}) - H_int)/H_int;
+H_Strang_proj2_error = (H(z_2{:}) - H_int)/H_int;
+H_semi2_error        = (H(z_3{:}) - H_int)/H_int;
+H_mid_error          = (H(z_4{:}) - H_int)/H_int;
+% H_Tao4_error         = (H(z_5{:}) - H_int)/H_int;
+H_Strang_proj4_error = (H(z_6{:}) - H_int)/H_int;
+H_Triple4_error      = (H(z_7{:}) - H_int)/H_int;
+H_Suzuki4_error      = (H(z_8{:}) - H_int)/H_int;
+H_IRK4_error         = (H(z_9{:}) - H_int)/H_int;
+% H_Tao6_error         = (H(z_10{:}) - H_int)/H_int;
+H_Strang_proj6_error = (H(z_11{:}) - H_int)/H_int;
+H_Triple6_error      = (H(z_12{:}) - H_int)/H_int;
+H_Suzuki6_error      = (H(z_13{:}) - H_int)/H_int;
+H_Yoshida6_error     = (H(z_14{:}) - H_int)/H_int;
+
+% I_Tao2_error         = (I(z_1{:}) - I_int)/I_int;
+I_Strang_proj2_error = (I(z_2{:}) - I_int)/I_int;
+I_semi2_error        = (I(z_3{:}) - I_int)/I_int;
+I_mid_error          = (I(z_4{:}) - I_int)/I_int;
+% I_Tao4_error         = (I(z_5{:}) - I_int)/I_int;
+I_Strang_proj4_error = (I(z_6{:}) - I_int)/I_int;
+I_Triple4_error      = (I(z_7{:}) - I_int)/I_int;
+I_Suzuki4_error      = (I(z_8{:}) - I_int)/I_int;
+I_IRK4_error         = (I(z_9{:}) - I_int)/I_int;
+% I_Tao6_error         = (I(z_10{:}) - I_int)/I_int;
+I_Strang_proj6_error = (I(z_11{:}) - I_int)/I_int;
+I_Triple6_error      = (I(z_12{:}) - I_int)/I_int;
+I_Suzuki6_error      = (I(z_13{:}) - I_int)/I_int;
+I_Yoshida6_error     = (I(z_14{:}) - I_int)/I_int;
+
+
+
+%--------------------------------------------------------------------------
+% Figures
+%--------------------------------------------------------------------------
+time = 0:2*dt:dt*itr;
+
+
+figure
+
+set(0,'DefaultAxesFontSize', 12)
+
+subplot(3,2,1)
+plot(time,H_semi2_error); hold on
+plot(time,H_Strang_proj2_error)
+xlabel('time','interpreter','latex')
+legend('semiexplicit 2','Strang-proj 2');
+
+title('$\frac{H-H_{0}}{H_{0}}$','interpreter','latex','FontSize', 16)
+
+
+subplot(3,2,2)
+plot(time,I_semi2_error); hold on
+plot(time,I_Strang_proj2_error)
+xlabel('time','Interpreter','latex')
+
+title('$\frac{I-I_{0}}{I_{0}}$','interpreter','latex','FontSize', 16)
+
+
+subplot(3,2,3)
+plot(time,H_Triple4_error) ; hold on
+plot(time,H_Strang_proj4_error)
+xlabel('time','Interpreter','latex')
+legend('semiexplicit 4','Strang-proj 4');
+
+
+subplot(3,2,4)
+plot(time,I_Triple4_error); hold on
+plot(time,I_Strang_proj4_error)
+xlabel('time','Interpreter','latex')
+
+
+subplot(3,2,5)
+plot(time,H_Triple6_error); hold on
+plot(time,H_Strang_proj6_error)
+xlabel('time','Interpreter','latex')
+legend('semiexplicit 6','Strang-proj 6');
+
+
+subplot(3,2,6)
+plot(time,I_Triple6_error); hold on
+plot(time,I_Strang_proj6_error)
+xlabel('time','Interpreter','latex')
+
+
+
+set(findobj(gcf,'type','axes'), ...
+    'FontName'    , 'latex'   , ...
+    'Box'         , 'off'     , ...
+    'TickDir'     , 'out'     , ...
+    'TickLength'  , [.02 .02] , ...
+    'XMinorTick'  , 'on'      , ...
+    'YMinorTick'  , 'on'      , ...
+    'YGrid'       , 'off'     , ...
+    'YMinorGrid'  , 'off'     , ...
+    'XColor'      , [.3 .3 .3], ...
+    'YColor'      , [.3 .3 .3], ...
+    'LineWidth'   , 1         )
+
+set(findall(gcf,'type','legend'), ...
+    'FontSize'      , 11        , ...
+    'Interpreter'   , 'latex'   , ...
+    'ItemTokenSize' , [10,5]    , ...
+    'Location'      , 'best'    )
+
+set(gcf,'Position',[50 200 800 600])
+
+
+
+
+
+
+
+
+
+figure
+
+set(0,'DefaultAxesFontSize', 12)
+
+subplot(3,2,1)
+plot(time,H_semi2_error); hold on
+plot(time,H_mid_error)
+xlabel('time','interpreter','latex')
+legend('semiexplicit 2','midpoint')
+
+title('$\frac{H-H_{0}}{H_{0}}$','interpreter','latex','FontSize', 16)
+
+
+subplot(3,2,2)
+plot(time,I_semi2_error); hold on
+plot(time,I_mid_error)
+xlabel('time','Interpreter','latex')
+
+title('$\frac{I-I_{0}}{I_{0}}$','interpreter','latex','FontSize', 16)
+
+
+subplot(3,2,3)
+plot(time,H_Triple4_error) ; hold on
+plot(time,H_Suzuki4_error)
+plot(time,H_IRK4_error)
+xlabel('time','Interpreter','latex')
+legend('semiexplicit 4','semiexplicit-S 4','IRK4');
+
+
+subplot(3,2,4)
+plot(time,I_Triple4_error); hold on
+plot(time,I_Suzuki4_error)
+plot(time,I_IRK4_error)
+xlabel('time','Interpreter','latex')
+
+
+subplot(3,2,5)
+plot(time,H_Triple6_error); hold on
+plot(time,H_Suzuki6_error)
+plot(time,H_Yoshida6_error)
+xlabel('time','Interpreter','latex')
+legend('semiexplicit 6','semiexplicit-S 6','semiexplicit-Y 6')
+
+
+subplot(3,2,6)
+plot(time,I_Triple6_error); hold on
+plot(time,I_Suzuki6_error)
+plot(time,I_Yoshida6_error)
+xlabel('time','Interpreter','latex')
+
+
+
+set(findobj(gcf,'type','axes'), ...
+    'FontName'    , 'latex'   , ...
+    'Box'         , 'off'     , ...
+    'TickDir'     , 'out'     , ...
+    'TickLength'  , [.02 .02] , ...
+    'XMinorTick'  , 'on'      , ...
+    'YMinorTick'  , 'on'      , ...
+    'YGrid'       , 'off'     , ...
+    'YMinorGrid'  , 'off'     , ...
+    'XColor'      , [.3 .3 .3], ...
+    'YColor'      , [.3 .3 .3], ...
+    'LineWidth'   , 1         )
+
+set(findall(gcf,'type','legend'), ...
+    'FontSize'      , 11        , ...
+    'Interpreter'   , 'latex'   , ...
+    'ItemTokenSize' , [10,5]    , ...
+    'Location'      , 'best'    )
+
+set(gcf,'Position',[50 100 800 600])
+
+
+% tol = 1e-10;
+% 
+% [ q_2,  p_2,  NW_2,  Error_2,  Defect_2,  time_2] = semi.semi2     (semi_args{:});  
+% [ q_5,  p_5,  NW_5,  Error_5,  Defect_5,  time_5] = semi.TJ4       (semi_args{:});  
+% [ q_9,  p_9,  NW_9,  Error_9,  Defect_9,  time_9] = semi.TJ6       (semi_args{:});
+% 
+% H_semi2_error    = (H(z_2{:}) - H_int)/H_int;
+% H_Strang4_error  = (H(z_5{:}) - H_int)/H_int;
+% H_Strang6_error  = (H(z_9{:}) - H_int)/H_int;
+% 
+% I_semi2_error    = (I(z_2{:}) - I_int)/I_int;
+% I_Strang4_error  = (I(z_5{:}) - I_int)/I_int;
+% I_Strang6_error  = (I(z_9{:}) - I_int)/I_int;
+
+% 
+% figure
+% 
+% set(0,'DefaultAxesFontSize', 12)
+% 
+% subplot(3,2,1)
+% plot(time,H_Tao2_error); hold on
+% plot(time,H_Strang_proj2_error)
+% xlabel('time','Interpreter','latex')
+% legend('Tao 2','Strang-proj 2')
+% 
+% title('$\frac{H-H_{0}}{H_{0}}$','interpreter','latex','FontSize', 16)
+% 
+% 
+% subplot(3,2,2)
+% plot(time,I_Tao2_error); hold on
+% plot(time,I_Strang_proj2_error)
+% xlabel('time','Interpreter','latex')
+% 
+% title('$\frac{I-I_{0}}{I_{0}}$','interpreter','latex','FontSize', 16)
+% 
+% subplot(3,2,3)
+% plot(time,H_Tao4_error); hold on
+% plot(time,H_Strang_proj4_error)
+% xlabel('time','Interpreter','latex')
+% legend('Tao 4','Strang-proj 4')
+% 
+% 
+% subplot(3,2,4)
+% plot(time,I_Tao4_error); hold on
+% plot(time,I_Strang_proj4_error)
+% xlabel('time','Interpreter','latex')
+% 
+% 
+% subplot(3,2,5)
+% plot(time,H_Tao6_error); hold on
+% plot(time,H_Strang_proj6_error)
+% xlabel('time','Interpreter','latex')
+% legend('Tao 6','Strang-proj 6')
+% 
+% 
+% subplot(3,2,6)
+% plot(time,I_Tao6_error); hold on
+% plot(time,I_Strang_proj6_error)
+% xlabel('time','Interpreter','latex')
+% 
+% 
+% set(findobj(gcf,'type','axes'), ...
+%     'FontName'    , 'latex'   , ...
+%     'Box'         , 'off'     , ...
+%     'TickDir'     , 'out'     , ...
+%     'TickLength'  , [.02 .02] , ...
+%     'XMinorTick'  , 'on'      , ...
+%     'YMinorTick'  , 'on'      , ...
+%     'YGrid'       , 'off'     , ...
+%     'YMinorGrid'  , 'off'     , ...
+%     'XColor'      , [.3 .3 .3], ...
+%     'YColor'      , [.3 .3 .3], ...
+%     'LineWidth'   , 1         )
+% 
+% set(findall(gcf,'type','legend'), ...
+%     'FontSize'      , 11        , ...
+%     'Interpreter'   , 'latex'   , ...
+%     'ItemTokenSize' , [10,5]    , ...
+%     'Location'      , 'best'    )
+% 
+% 
+% set(gcf,'Position',[800 100 800 600])
+
+
+
+% 
+% 
+% filename = sprintf('Schrodinger_%g.mat', abs(log10(tol)));
+% path = [pwd, '\', filename];
+% save(path,'omega','tol','time_range','dt','table_cols','time','H_invs','I_invs')
+% 
+% 
+
+
+
+
+
+
+
