@@ -8,7 +8,7 @@ clc
 
 omega = 100;
 time_range = 10000
-dt = 0.001
+dt = 0.01
 tol = 1e-13
 Max_NW_Iter = 100;
 dim = 5;
@@ -63,23 +63,23 @@ Gauss_args  = {gradq, gradp, gradqq, gradqp, gradpp, q_int, p_int, dt, itr, tol,
 
 semi = semiexplicit;
 
-% [ q_1,  p_1,                   Defect_1,  time_1] = Tao_method.Tao2   (Tao_args{:});
+[ q_1,  p_1,                   Defect_1,  time_1] = Tao_method.base2  (Tao_args{:});
 [ q_2,  p_2,                              time_2] = Strang_proj.base2 (Strang_args{:});  
 [ q_3,  p_3,  NW_3,  Error_3,  Defect_3,  time_3] = semi.base2        (semi_args{:});  
-[ q_4,  p_4,  NW_4,  Error_4,             time_4] = IMid2             (Gauss_args{:});
+% [ q_4,  p_4,  NW_4,  Error_4,             time_4] = IMid2             (Gauss_args{:});
 
-% [ q_5,  p_5,                   Defect_5,  time_5] = Tao_method.TJ4    (Tao_args{:});
+[ q_5,  p_5,                   Defect_5,  time_5] = Tao_method.TJ4    (Tao_args{:});
 [ q_6,  p_6,                              time_6] = Strang_proj.TJ4   (Strang_args{:}); 
 [ q_7,  p_7,  NW_7,  Error_7,  Defect_7,  time_7] = semi.TJ4          (semi_args{:});   
-[ q_8,  p_8,  NW_8,  Error_8,  Defect_8,  time_8] = semi.Su4          (semi_args{:});   
-[ q_9,  p_9,  NW_9,  Error_9,             time_9] = IRK4              (Gauss_args{:});  
+% [ q_8,  p_8,  NW_8,  Error_8,  Defect_8,  time_8] = semi.Su4          (semi_args{:});   
+% [ q_9,  p_9,  NW_9,  Error_9,             time_9] = IRK4              (Gauss_args{:});  
 % [ q_9,  p_9,                              time_9] = RK4               (Strang_args{:}); 
 
-% [q_10, p_10,                  Defect_10, time_10] = Tao_method.TJ6    (Tao_args{:});
+[q_10, p_10,                  Defect_10, time_10] = Tao_method.TJ6    (Tao_args{:});
 [q_11, p_11,                             time_11] = Strang_proj.TJ6   (Strang_args{:});  
 [q_12, p_12, NW_12, Error_12, Defect_12, time_12] = semi.TJ6          (semi_args{:});   
-[q_13, p_13, NW_13, Error_13, Defect_13, time_13] = semi.Su6          (semi_args{:});  
-[q_14, p_14, NW_14, Error_14, Defect_14, time_14] = semi.Yo6          (semi_args{:});  
+% [q_13, p_13, NW_13, Error_13, Defect_13, time_13] = semi.Su6          (semi_args{:});  
+% [q_14, p_14, NW_14, Error_14, Defect_14, time_14] = semi.Yo6          (semi_args{:});  
 
 
 % 
@@ -108,52 +108,52 @@ H_int = H(z_int{:});
 I_int = I(z_int{:});
 
 % selecting every other element to avoid a memory problem
-% z_1  = [arrayfun(@(x) {q_1(x,1:2:end)},1:dim), arrayfun(@(x) {p_1(x,1:2:end)},1:dim)];
+z_1  = [arrayfun(@(x) {q_1(x,1:2:end)},1:dim), arrayfun(@(x) {p_1(x,1:2:end)},1:dim)];
 z_2  = [arrayfun(@(x) {q_2(x,1:2:end)},1:dim), arrayfun(@(x) {p_2(x,1:2:end)},1:dim)];
 z_3  = [arrayfun(@(x) {q_3(x,1:2:end)},1:dim), arrayfun(@(x) {p_3(x,1:2:end)},1:dim)];
-z_4  = [arrayfun(@(x) {q_4(x,1:2:end)},1:dim), arrayfun(@(x) {p_4(x,1:2:end)},1:dim)];
-% z_5  = [arrayfun(@(x) {q_5(x,1:2:end)},1:dim), arrayfun(@(x) {p_5(x,1:2:end)},1:dim)];
+% z_4  = [arrayfun(@(x) {q_4(x,1:2:end)},1:dim), arrayfun(@(x) {p_4(x,1:2:end)},1:dim)];
+z_5  = [arrayfun(@(x) {q_5(x,1:2:end)},1:dim), arrayfun(@(x) {p_5(x,1:2:end)},1:dim)];
 z_6  = [arrayfun(@(x) {q_6(x,1:2:end)},1:dim), arrayfun(@(x) {p_6(x,1:2:end)},1:dim)];
 z_7  = [arrayfun(@(x) {q_7(x,1:2:end)},1:dim), arrayfun(@(x) {p_7(x,1:2:end)},1:dim)];
-z_8  = [arrayfun(@(x) {q_8(x,1:2:end)},1:dim), arrayfun(@(x) {p_8(x,1:2:end)},1:dim)];
-z_9  = [arrayfun(@(x) {q_9(x,1:2:end)},1:dim), arrayfun(@(x) {p_9(x,1:2:end)},1:dim)];
-% z_10 = [arrayfun(@(x) {q_10(x,1:2:end)},1:dim), arrayfun(@(x) {p_10(x,1:2:end)},1:dim)];
+% z_8  = [arrayfun(@(x) {q_8(x,1:2:end)},1:dim), arrayfun(@(x) {p_8(x,1:2:end)},1:dim)];
+% z_9  = [arrayfun(@(x) {q_9(x,1:2:end)},1:dim), arrayfun(@(x) {p_9(x,1:2:end)},1:dim)];
+z_10 = [arrayfun(@(x) {q_10(x,1:2:end)},1:dim), arrayfun(@(x) {p_10(x,1:2:end)},1:dim)];
 z_11 = [arrayfun(@(x) {q_11(x,1:2:end)},1:dim), arrayfun(@(x) {p_11(x,1:2:end)},1:dim)];
 z_12 = [arrayfun(@(x) {q_12(x,1:2:end)},1:dim), arrayfun(@(x) {p_12(x,1:2:end)},1:dim)];
-z_13 = [arrayfun(@(x) {q_13(x,1:2:end)},1:dim), arrayfun(@(x) {p_13(x,1:2:end)},1:dim)];
-z_14 = [arrayfun(@(x) {q_14(x,1:2:end)},1:dim), arrayfun(@(x) {p_14(x,1:2:end)},1:dim)];
+% z_13 = [arrayfun(@(x) {q_13(x,1:2:end)},1:dim), arrayfun(@(x) {p_13(x,1:2:end)},1:dim)];
+% z_14 = [arrayfun(@(x) {q_14(x,1:2:end)},1:dim), arrayfun(@(x) {p_14(x,1:2:end)},1:dim)];
 
 
 
-% H_Tao2_error         = (H(z_1{:}) - H_int)/H_int;
+H_Tao2_error         = (H(z_1{:}) - H_int)/H_int;
 H_Strang_proj2_error = (H(z_2{:}) - H_int)/H_int;
 H_semi2_error        = (H(z_3{:}) - H_int)/H_int;
-H_mid_error          = (H(z_4{:}) - H_int)/H_int;
-% H_Tao4_error         = (H(z_5{:}) - H_int)/H_int;
+% H_mid_error          = (H(z_4{:}) - H_int)/H_int;
+H_Tao4_error         = (H(z_5{:}) - H_int)/H_int;
 H_Strang_proj4_error = (H(z_6{:}) - H_int)/H_int;
 H_Triple4_error      = (H(z_7{:}) - H_int)/H_int;
-H_Suzuki4_error      = (H(z_8{:}) - H_int)/H_int;
-H_IRK4_error         = (H(z_9{:}) - H_int)/H_int;
-% H_Tao6_error         = (H(z_10{:}) - H_int)/H_int;
+% H_Suzuki4_error      = (H(z_8{:}) - H_int)/H_int;
+% H_IRK4_error         = (H(z_9{:}) - H_int)/H_int;
+H_Tao6_error         = (H(z_10{:}) - H_int)/H_int;
 H_Strang_proj6_error = (H(z_11{:}) - H_int)/H_int;
 H_Triple6_error      = (H(z_12{:}) - H_int)/H_int;
-H_Suzuki6_error      = (H(z_13{:}) - H_int)/H_int;
-H_Yoshida6_error     = (H(z_14{:}) - H_int)/H_int;
+% H_Suzuki6_error      = (H(z_13{:}) - H_int)/H_int;
+% H_Yoshida6_error     = (H(z_14{:}) - H_int)/H_int;
 
-% I_Tao2_error         = (I(z_1{:}) - I_int)/I_int;
+I_Tao2_error         = (I(z_1{:}) - I_int)/I_int;
 I_Strang_proj2_error = (I(z_2{:}) - I_int)/I_int;
 I_semi2_error        = (I(z_3{:}) - I_int)/I_int;
-I_mid_error          = (I(z_4{:}) - I_int)/I_int;
-% I_Tao4_error         = (I(z_5{:}) - I_int)/I_int;
+% I_mid_error          = (I(z_4{:}) - I_int)/I_int;
+I_Tao4_error         = (I(z_5{:}) - I_int)/I_int;
 I_Strang_proj4_error = (I(z_6{:}) - I_int)/I_int;
 I_Triple4_error      = (I(z_7{:}) - I_int)/I_int;
-I_Suzuki4_error      = (I(z_8{:}) - I_int)/I_int;
-I_IRK4_error         = (I(z_9{:}) - I_int)/I_int;
-% I_Tao6_error         = (I(z_10{:}) - I_int)/I_int;
+% I_Suzuki4_error      = (I(z_8{:}) - I_int)/I_int;
+% I_IRK4_error         = (I(z_9{:}) - I_int)/I_int;
+I_Tao6_error         = (I(z_10{:}) - I_int)/I_int;
 I_Strang_proj6_error = (I(z_11{:}) - I_int)/I_int;
 I_Triple6_error      = (I(z_12{:}) - I_int)/I_int;
-I_Suzuki6_error      = (I(z_13{:}) - I_int)/I_int;
-I_Yoshida6_error     = (I(z_14{:}) - I_int)/I_int;
+% I_Suzuki6_error      = (I(z_13{:}) - I_int)/I_int;
+% I_Yoshida6_error     = (I(z_14{:}) - I_int)/I_int;
 
 
 
@@ -168,8 +168,8 @@ figure
 set(0,'DefaultAxesFontSize', 12)
 
 subplot(3,2,1)
-plot(time,H_semi2_error); hold on
-plot(time,H_Strang_proj2_error)
+plot(time(1:1000/(2*dt)),H_semi2_error(1:1000/(2*dt))); hold on
+plot(time(1:1000/(2*dt)),H_Strang_proj2_error(1:1000/(2*dt)))
 xlabel('time','interpreter','latex')
 legend('semiexplicit 2','Strang-proj 2');
 
@@ -177,8 +177,8 @@ title('$\frac{H-H_{0}}{H_{0}}$','interpreter','latex','FontSize', 16)
 
 
 subplot(3,2,2)
-plot(time,I_semi2_error); hold on
-plot(time,I_Strang_proj2_error)
+plot(time(1:1000/(2*dt)),I_semi2_error(1:1000/(2*dt))); hold on
+plot(time(1:1000/(2*dt)),I_Strang_proj2_error(1:1000/(2*dt)))
 xlabel('time','Interpreter','latex')
 
 title('$\frac{I-I_{0}}{I_{0}}$','interpreter','latex','FontSize', 16)
@@ -316,9 +316,10 @@ set(gcf,'Position',[50 100 800 600])
 
 % tol = 1e-10;
 % 
-% [ q_2,  p_2,  NW_2,  Error_2,  Defect_2,  time_2] = semi.semi2     (semi_args{:});  
+% [ q_2,  p_2,  NW_2,  Error_2,  Defect_2,  time_2] = semi.base2     (semi_args{:});  
 % [ q_5,  p_5,  NW_5,  Error_5,  Defect_5,  time_5] = semi.TJ4       (semi_args{:});  
 % [ q_9,  p_9,  NW_9,  Error_9,  Defect_9,  time_9] = semi.TJ6       (semi_args{:});
+
 % 
 % H_semi2_error    = (H(z_2{:}) - H_int)/H_int;
 % H_Strang4_error  = (H(z_5{:}) - H_int)/H_int;
@@ -327,6 +328,7 @@ set(gcf,'Position',[50 100 800 600])
 % I_semi2_error    = (I(z_2{:}) - I_int)/I_int;
 % I_Strang4_error  = (I(z_5{:}) - I_int)/I_int;
 % I_Strang6_error  = (I(z_9{:}) - I_int)/I_int;
+
 
 % 
 % figure

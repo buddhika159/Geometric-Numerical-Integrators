@@ -133,6 +133,8 @@ time = 0:dt:dt*itr;
 
 
 figure
+set(0,'DefaultAxesFontSize', 12)
+
 set(gcf,'Position',[300 250 600 600])
 
 sgtitle('$\frac{H-H_{0}}{H_{0}}$','interpreter','latex','FontSize', 16)
