@@ -1,5 +1,5 @@
 # Geometric-Numerical-Integrators
-This repository includes recently developed geometric integrators for Hamiltonian systems [[1]](#1).
+This repository contains the geometric integrators for Hamiltonian systems as developed in the paper by Jayawardana and Ohsawa [[1]](#1). 
 
 ## References
 <a id="1">[1]</a> 
